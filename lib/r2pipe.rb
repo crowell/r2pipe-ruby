@@ -3,7 +3,7 @@ require 'pty'
 require 'json'
 require 'shellwords'
 
-module R2pipe
+module R2Pipe
   # R2Pipe is an easy way to communicate with an r2 core through ruby
   class R2Pipe
     def initialize(file)
