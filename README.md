@@ -43,7 +43,7 @@ use like this
 require 'r2pipe'
 puts 'r2pipe ruby api demo'
 puts '===================='
-r2p = R2Pipe::R2Pipe.new '/bin/ls'
+r2p = R2Pipe.new '/bin/ls'
 puts r2p.cmd 'pi 5'
 puts r2p.cmd 'pij 1'
 puts r2p.json(r2p.cmd 'pij 1')
