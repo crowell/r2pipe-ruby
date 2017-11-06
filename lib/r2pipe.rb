@@ -5,31 +5,50 @@ require 'shellwords'
 
 # R2Pipe is an easy way to communicate with an r2 core through ruby
 class R2Pipe
-  def initialize(file)
+  def initialize(file = nil)
     @file = file
-    exec = "r2 -q0 #{Shellwords.shellescape file} 2>/dev/null"
-    PTY.spawn(exec) do |read, write, pid|
-      @read = read
-      @write = write
-      @pid = pid
-      @read.gets("\0")
+    if file == nil
+      fdIn = ENV['R2PIPE_IN'].to_i
+      fdOut = ENV['R2PIPE_OUT'].to_i
+      if fdIn < 1 or fdOut < 1
+        raise 'Cannot find R2PIPE_IN and R2PIPE_OUT environment variables'
+      end
+      @read = IO.new(fdIn, 'r')
+      @write = IO.new(fdOut, 'w')
+      @pid = -1
+    else
+      exec = "r2 -q0 #{Shellwords.shellescape file} 2>/dev/null"
+      PTY.spawn(exec) do |read, write, pid|
+        @read = read
+        @write = write
+        @pid = pid
+        @read.gets("\0")
+      end
     end
   end
 
-  # runs a command on the radare2 core
   def cmd(str)
     @write.print "#{str}\n"
+    @write.flush
     @read.gets("\0")[0..-2]
   end
 
-  # closes the radare2 core and quits
-  def quit
-    cmd('q!')
-    ::Process.wait @pid
+  def cmdj(str)
+    json(cmd(str))
   end
 
-  # returns a parsed json string
+  def quit
+    cmd('q!')
+    @read.close
+    @write.close
+    if @pid != -1
+      ::Process.wait @pid
+    end
+  end
+
   def json(str)
-    JSON.parse str.sub("\n", '').sub("\r", '')
+    if !str.nil?
+      JSON.parse str.sub("\n", '').sub("\r", '')
+    end
   end
 end
