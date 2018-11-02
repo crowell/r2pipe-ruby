@@ -1,5 +1,8 @@
-require 'r2pipe/version'
-require 'pty'
+#!/usr/bin/env ruby
+
+# author pancake@nopcode.org
+
+require 'open3'
 require 'json'
 require 'shellwords'
 
@@ -17,13 +20,12 @@ class R2Pipe
       @write = IO.new(fdOut, 'w')
       @pid = -1
     else
-      exec = "r2 -q0 #{Shellwords.shellescape file} 2>/dev/null"
-      PTY.spawn(exec) do |read, write, pid|
-        @read = read
-        @write = write
-        @pid = pid
-        @read.gets("\0")
-      end
+      exec = "radare2 -q0 #{Shellwords.shellescape file} 2>/dev/null"
+      write, read, wait_thr = Open3.popen2(exec)
+      @read = read
+      @write = write
+      @pid = wait_thr.pid
+      @read.gets("\0")
     end
   end
 
@@ -47,7 +49,7 @@ class R2Pipe
   end
 
   def json(str)
-    if !str.nil?
+    if str != nil
       JSON.parse str.sub("\n", '').sub("\r", '')
     end
   end
